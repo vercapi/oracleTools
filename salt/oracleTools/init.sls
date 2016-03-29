@@ -1,0 +1,1 @@
+#File will contain all states for the oracle tools

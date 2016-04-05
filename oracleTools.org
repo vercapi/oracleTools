@@ -1,0 +1,97 @@
+#+TITLE: Oracle Tools
+
+* Docker
+  
+** Base image
+
+  All docker images are based on oracle-minion. This is an oracleLinux image with a saltstack minion installed on it.
+  
+*** Building the oracle-minion
+
+    Generate a key move it to the master and supply it so that the docker image can be build with it.
+    #+HEADER: :var minion="minion.oracletools"
+    #+BEGIN_SRC sh :dir /sudo::/home/vercapi/Documents/projects/oracleTools/oracle-minion/ :results raw
+      KEY_NAME=preseed_key
+      PUB_KEY_FILE_NAME=$KEY_NAME.pub
+      PRIV_KEY_FILE_NAME=$KEY_NAME.pem
+
+      salt-key --gen-keys=$KEY_NAME
+
+      # Copy to master for the minion id $minion
+      cp $PUB_KEY_FILE_NAME /etc/salt/pki/master/minions/$minion
+
+      # catch
+      finish () {
+          rm -f $PUB_KEY_FILE_NAME
+          rm -f $PRIV_KEY_FILE_NAME
+      }
+
+      trap finish EXIT
+
+      docker build -t vercapi/oracle_minion .
+    #+END_SRC
+
+    #+RESULTS:
+    Sending build context to Docker daemon  7.68 kB
+    Step 1 : FROM oraclelinux:7.2
+     ---> adf2d3d00fce
+    Step 2 : RUN rpm --import https://repo.saltstack.com/yum/redhat/7/x86_64/latest/SALTSTACK-GPG-KEY.pub
+     ---> Using cache
+     ---> 38ccb5f3786f
+    Step 3 : ADD ./saltstack.repo /etc/yum.repos.d/saltstack.repo
+     ---> Using cache
+     ---> a2b6da9fb63a
+    Step 4 : RUN yum -y update && yum -y install salt-minion
+     ---> Using cache
+     ---> a1b51a63f4b8
+    Step 5 : VOLUME ['/etc/salt/minion.d']
+     ---> Using cache
+     ---> 97a8ad636fb5
+    Step 6 : COPY minion /etc/salt/minion
+     ---> 942c04ac243f
+    Removing intermediate container 1f1016e2417f
+    Step 7 : COPY preseed_key.pem /etc/salt/pki/minion/minion.pem
+     ---> 3f76073f2dee
+    Removing intermediate container 097960a88c9c
+    Step 8 : COPY preseed_key.pub /etc/salt/pki/minion/minion.pub
+     ---> 6a8f548b76bf
+    Removing intermediate container 73142a32121e
+    Step 9 : CMD /usr/bin/salt-minion -l debug
+     ---> Running in 0080ec7d0d5d
+     ---> 07a29c91a713
+    Removing intermediate container 0080ec7d0d5d
+    Successfully built 07a29c91a713
+    
+
+*** TODO Running the vercap/oracle_minion image
+
+    Prerequisites
+    Before running the minion we need to setup some directories so that the salt state is persisted when the container is destroyed
+    * minion.d is the directory to store configuration
+
+    #+HEADER: :var minion="minion.oracletools"
+    #+BEGIN_SRC sh :dir /sudo::/
+    MINION_HOME=/srv/docker/volumes/$minion
+
+    mkdir -p $MINION_HOME/etc/salt/minion.d
+    #+END_SRC
+
+    #+RESULTS:
+
+    Actually run the container
+    
+    #+HEADER: :var minion="minion.oracletools"
+    #+BEGIN_SRC sh :dir /sudo::/home/vercapi/Documents/projects/oracleTools/oracle-minion/ :results raw
+      docker run -id -h $minion \
+             --name $minion \
+             -v /srv/docker/volumes/$minion/etc/salt/minion.d:/etc/salt/minion.d \
+             --net="bridge" \
+             vercapi/oracle_minion
+    #+END_SRC
+
+    #+RESULTS:
+    
+
+* Database
+
+  

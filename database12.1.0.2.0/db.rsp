@@ -40,14 +40,14 @@ ORACLE_HOSTNAME=localhost
 #-------------------------------------------------------------------------------
 # Specify the Unix group to be set for the inventory directory.  
 #-------------------------------------------------------------------------------
-UNIX_GROUP_NAME=users
+UNIX_GROUP_NAME=oinstall
 
 #-------------------------------------------------------------------------------
 # Specify the location which holds the inventory files.
 # This is an optional parameter if installing on
 # Windows based Operating System.
 #-------------------------------------------------------------------------------
-INVENTORY_LOCATION=/opt/oracle/app/oraInventory
+INVENTORY_LOCATION=/opt/oracle/oraInventory
 #-------------------------------------------------------------------------------
 # Specify the languages in which the components will be installed.             
 # 
@@ -300,22 +300,22 @@ oracle.install.db.config.starterdb.password.ALL=
 #-------------------------------------------------------------------------------
 # Specify the SYS password for the starter database.
 #-------------------------------------------------------------------------------
-oracle.install.db.config.starterdb.password.SYS=
+oracle.install.db.config.starterdb.password.SYS=Welcome1
 
 #-------------------------------------------------------------------------------
 # Specify the SYSTEM password for the starter database.
 #-------------------------------------------------------------------------------
-oracle.install.db.config.starterdb.password.SYSTEM=
+oracle.install.db.config.starterdb.password.SYSTEM=Welcome1
 
 #-------------------------------------------------------------------------------
 # Specify the DBSNMP password for the starter database.
 #-------------------------------------------------------------------------------
-oracle.install.db.config.starterdb.password.DBSNMP=
+oracle.install.db.config.starterdb.password.DBSNMP=Welcome1
 
 #-------------------------------------------------------------------------------
 # Specify the PDBADMIN password required for creation of Pluggable Database in the Container Database.
 #-------------------------------------------------------------------------------
-oracle.install.db.config.starterdb.password.PDBADMIN=
+oracle.install.db.config.starterdb.password.PDBADMIN=Welcome1
 
 #-------------------------------------------------------------------------------
 # Specify the management option to use for managing the database.

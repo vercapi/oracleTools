@@ -108,7 +108,10 @@
 ** Docker
 
 *** Build the docker file
-    
+
+    For building we need to make sure that docker has enough space for the images so we need to change the image location
+
+    We will copy the needed files to the Docker image and then remove them again&
     #+BEGIN_SRC sh :dir /sudo::/home/vercapi/Documents/projects/oracleTools/database12.1.0.2.0/ :results raw
       cp /mnt/localData/stage/linuxamd64_12102_database_1of2.zip ./
       cp /mnt/localData/stage/linuxamd64_12102_database_2of2.zip ./
@@ -118,9 +121,15 @@
       rm linuxamd64_12102_database_1of2.zip && rm linuxamd64_12102_database_2of2.zip
     #+END_SRC
 
+    Running the docker with a shell
+    docker run -i -t vercapi/oracle_database121 /bin/bash
+
 
 *** Prepare the minions for the database docker    
+
+    Pre autohrize the minion, this needs to be done for every new container (host)name.
     #+CALL: prep_minion("database121.oracletools")
     
     #+RESULTS:
 
+/

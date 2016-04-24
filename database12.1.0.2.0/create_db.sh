@@ -13,12 +13,19 @@ EOF
 }
 
 
-# Replace parameters in template file
-sed -i "s/{{ db_create_file_dest }}/\/opt\/oracle\/oraInventory\/$ORACLE_SID/" /home/oracle/db_install.dbt
-sed -i "s/{{ oracle_base }}/\/opt\/oracle\/app/" /home/oracle/db_install.dbt
-sed -i "s/{{ database_name }}/$ORACLE_SID/" /home/oracle/db_install.dbt
+prepare_template() {
+    sed -i "s/{{ db_create_file_dest }}/\/opt\/oracle\/oraInventory\/$ORACLE_SID/" /home/oracle/db_install.dbt
+    sed -i "s/{{ oracle_base }}/\/opt\/oracle\/app/" /home/oracle/db_install.dbt
+    sed -i "s/{{ database_name }}/$ORACLE_SID/" /home/oracle/db_install.dbt
+}
 
-# Actually create db
-$ORACLE_HOME/bin/dbca -silent -createdatabase -templatename /home/oracle/db_install.dbt -gdbname $ORACLE_SID -sid $ORACLE_SID -syspassword oracle -systempassword oracle -dbsnmppassword oracle
+create_database() {
+    prepare_template
+    
+    # Actually create db
+    $ORACLE_HOME/bin/dbca -silent -createdatabase -templatename /home/oracle/db_install.dbt -gdbname $ORACLE_SID -sid $ORACLE_SID -syspassword oracle -systempassword oracle -dbsnmppassword oracle
 
-create_pfile
+    create_pfile
+}
+
+create_database

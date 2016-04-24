@@ -49,10 +49,17 @@ RUN /opt/oracle/app/product/12.1.0/dbhome/root.sh
 # Provide creation and startup scritps
 COPY create_db.sh /home/oracle/
 COPY db_install.dbt /home/oracle/
+COPY run_db.sh /home/oracle
 RUN chown -R oracle:oinstall /home/oracle/
+
+# Provide listener config
+COPY listener.ora $ORACLE_HOME/network/admin/
+RUN chown oracle:oinstall $ORACLE_HOME/network/admin/listener.ora
 
 USER oracle
 
 RUN sh /home/oracle/create_db.sh
+
+CMD sh /home/oracle/run_db.sh
 
 EXPOSE 1521

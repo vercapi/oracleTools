@@ -1,11 +1,12 @@
 #+TITLE: Oracle Tools
 
-* Docker
-  
+* Docker  
+
 ** Base image
 
   All docker images are based on oracle-minion. This is an oracleLinux image with a saltstack minion installed on it.
   
+
 *** Building the oracle-minion
 
     Actually build the base minion
@@ -103,33 +104,69 @@
 ** Preparation steps
 
    First run the installer to create a response file. Run ./runInstaller and select 'Save response file' on the bottom of the summary step. (This is the last step before actually installing anything) 
+   Dowload the installation files from the Oracle Website.
 
 
 ** Docker
 
-*** Build the docker file
+   For flexibility and avoiding full rebuilds we will create the docker in 2 steps. The first step will be creating a software 
+   install on the image. The second will actually create a database. This gives the advantage that we can create different dockers
+   with different databases based on the same base docker image with the software install.
 
-    For building we need to make sure that docker has enough space for the images so we need to change the image location
+*** Build the docker for software only
 
-    We will copy the needed files to the Docker image and then remove them again&
-    #+BEGIN_SRC sh :dir /sudo::/home/vercapi/Documents/projects/oracleTools/database12.1.0.2.0/ :results raw
+    This docker image will contain a software only install. It will not have a ready database.
+
+    We will copy the needed files to the Docker image and then remove them again
+    Note that this image will be a big image so there needs to be enough space on the drive
+
+    Download of the software needs to happen manually.
+
+    #+BEGIN_SRC sh :dir /sudo::/home/vercapi/Documents/projects/oracleTools/software/database12.1.0.2.0/software :results raw
       cp /mnt/localData/stage/linuxamd64_12102_database_1of2.zip ./
       cp /mnt/localData/stage/linuxamd64_12102_database_2of2.zip ./
 
-      docker build -t vercapi/oracle_database121 .
+      docker build -t vercapi/oracle_software121 .
 
       rm linuxamd64_12102_database_1of2.zip && rm linuxamd64_12102_database_2of2.zip
     #+END_SRC
 
-    Running the docker with a shell
-    docker run -i -t vercapi/oracle_database121 /bin/bash
+    Running the docker with a shell to see the installation was successful
+    #+BEGIN_SRC sh :dir /sudo::/home/vercapi/Documents/projects/oracleTools/software/database12.1.0.2.0/software :results raw
+      docker run -i -t vercapi/oracle_soft121 /bin/bash
+    #+END_SRC
 
+*** Build the docker with DB creation
 
-*** Prepare the minions for the database docker    
+    This step actualy creates a database inside the docker. The parmeters to the scripts can be changed to install another DB.
+    The first step sets up the dbca template for the correct parameters. More parameters can be added with additional sed commands to have
+    more flexibility.
+   
+    #+HEADERS: :var p_oracle_sid="orcl" p_oracle_home="/opt/oracle/app/product/12.1.0/dbhome" p_persistent_data="/opt/oracle/oraInventory" p_oracle_base="/opt/oracle/app"
+    #+BEGIN_SRC sh :tangle ./database12.1.0.2.0/dbca/create_db.sh :dir ./database12.1.0.2.0/dbca
+      #rm db_install.dbt && cp db_install.dbt.orig db_install.dbt
+      rm run_db.sh && cp run_db.sh.orig run_db.sh
 
-    Pre autohrize the minion, this needs to be done for every new container (host)name.
-    #+CALL: prep_minion("database121.oracletools")
-    
-    #+RESULTS:
+      sed -i "s/{{ db_create_file_dest }}/\/opt\/oracle\/oraInventory\/$p_oracle_sid/" ./db_install.dbt
+      sed -i "s/{{ oracle_base }}/\/opt\/oracle\/app/" ./db_install.dbt
+      sed -i "s/{{ database_name }}/$p_oracle_sid/" ./db_install.dbt
 
-/
+      sed -i "s/{{oracle_home}}/$(echo $p_oracle_home | sed 's,/,\\/,g')/" ./run_db.sh
+      sed -i "s/{{oracle_sid}}/$p_oracle_sid/" ./run_db.sh
+      sed -i "s/{{oracle_base}}/$(echo $p_oracle_base | sed 's,/,\\/,g')/" ./run_db.sh
+
+      docker build --build-arg ORACLE_HOME=$p_oracle_home --build-arg ORACLE_SID=$p_oracle_sid --build-arg ORACLE_BASE=$p_oracle_base -t vercapi/orcl_121 .
+    #+END_SRC
+
+    Running the docker with a shell to see the installation was successful
+    #+BEGIN_SRC sh :dir /sudo::/home/vercapi/Documents/projects/oracleTools/software/database12.1.0.2.0/software :results raw
+      docker run -i -t vercapi/orcl_121 /bin/bash
+    #+END_SRC
+
+*** TODO Run the database
+
+    Note that starting the database this way will reset all data on the moment the contaier is destroyed
+
+    #+BEGIN_SRC sh :dir /sudo:root@nitro:/home/vercapi/Documents/projects/oracleTools
+      docker run -id -h orcl.oracleTools -p 1521 --name orcl vercapi/orcl_121
+    #+END_SRC

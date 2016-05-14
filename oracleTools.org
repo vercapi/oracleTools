@@ -168,5 +168,9 @@
     Note that starting the database this way will reset all data on the moment the contaier is destroyed
 
     #+BEGIN_SRC sh :dir /sudo:root@nitro:/home/vercapi/Documents/projects/oracleTools
-      docker run -id -h orcl.oracleTools -p 1521 --name orcl vercapi/orcl_121
+      docker run -id -h orcl.oracleTools -p 1521:1521 --name orcl vercapi/orcl_121
     #+END_SRC
+
+    #+RESULTS:
+    : 546b8f72a3497a6eebfd16f718509975e0e3b1ad1a6b5112acd902cf5dd08262
+

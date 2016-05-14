@@ -6,7 +6,7 @@ BABEL_TABLE
 p_oracle_home=$(cat <<'BABEL_TABLE'
 /opt/oracle/app/product/12.1.0/dbhome
 BABEL_TABLE
-)ls
+)
 p_persistent_data=$(cat <<'BABEL_TABLE'
 /opt/oracle/oraInventory
 BABEL_TABLE

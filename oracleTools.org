@@ -1,6 +1,6 @@
 #+TITLE: Oracle Tools
 
-* Docker  
+* Docker base  
 
 ** Base image
 
@@ -85,6 +85,9 @@
 
 *** Actually run the container
     
+    Test run for the minion. Uses storage for the keys when running
+    the bridge is needed so that the minion can connect to the salt master running on the host
+
     #+HEADER: :var minion="minion.oracletools"
     #+BEGIN_SRC sh :dir /sudo::/home/vercapi/Documents/projects/oracleTools/oracle-minion/ :results raw
       docker run -id -h $minion \
@@ -133,7 +136,7 @@
 
     Running the docker with a shell to see the installation was successful
     #+BEGIN_SRC sh :dir /sudo::/home/vercapi/Documents/projects/oracleTools/software/database12.1.0.2.0/software :results raw
-      docker run -i -t vercapi/oracle_soft121 /bin/bash
+      docker run -i -t vercapi/oracle_software121 /bin/bash
     #+END_SRC
 
 *** Build the docker with DB creation
@@ -163,14 +166,42 @@
       docker run -i -t vercapi/orcl_121 /bin/bash
     #+END_SRC
 
-*** TODO Run the database
+*** Run the database
+
+    We will prepare the directories so the standard orcl docker container can see the docker
+
+    #+CALL: prep_minion(minion="orcl.oracletools") :exports results
+
+    #+RESULTS:
 
     Note that starting the database this way will reset all data on the moment the contaier is destroyed
 
+    This is for simply starting the DB without using saltstack
+    #+HEADER: :var minion="orcl.oracletools"
     #+BEGIN_SRC sh :dir /sudo:root@nitro:/home/vercapi/Documents/projects/oracleTools
-      docker run -id -h orcl.oracleTools -p 1521:1521 --name orcl vercapi/orcl_121
+      docker run -id -h $minion \
+             --name $minion \
+             -v /srv/docker/volumes/$minion/etc/salt/minion.d:/etc/salt/minion.d \
+             -v /srv/docker/volumes/$minion/etc/salt/pki:/etc/salt/pki \
+             -p 1521:1521 \
+             --net="bridge" \
+             vercapi/orcl_121
     #+END_SRC
 
     #+RESULTS:
-    : 546b8f72a3497a6eebfd16f718509975e0e3b1ad1a6b5112acd902cf5dd08262
+    : 284346f409a2c76b84624a9913719a3e90c73e44af9e5907c7f2af0052c9ab5b
+
+
+
+    Hook into the running container
+    #+HEADER: :var minion="orcl.oracletools"
+    #+BEGIN_SRC sh :dir /sudo:root@nitro:/home/vercapi/Documents/projects/oracleTools
+    docker exec -i -t $minion /bin/bash
+    #+END_SRC
+
+    Run docker without the saltstack stuff
+    #+BEGIN_SRC sh :dir /sudo:root@nitro:/home/vercapi/Documents/projects/oracleTools
+    
+    #+END_SRC
+
 

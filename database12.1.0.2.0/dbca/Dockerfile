@@ -2,7 +2,7 @@
 # Database creation for Oracle 12c #
 ####################################
 
-FROM vercapi/oracle_soft121
+FROM vercapi/oracle_software121
 
 ARG ORACLE_HOME
 ARG ORACLE_SID
@@ -30,6 +30,6 @@ USER oracle
 RUN export ORACLE_HOME
 RUN export ORACLE_SID
 
-CMD sh /home/oracle/run_db.sh
-
 EXPOSE 1521
+
+CMD sh /home/oracle/run_db.sh

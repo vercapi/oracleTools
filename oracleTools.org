@@ -107,7 +107,7 @@
 ** Preparation steps
 
    First run the installer to create a response file. Run ./runInstaller and select 'Save response file' on the bottom of the summary step. (This is the last step before actually installing anything) 
-   Dowload the installation files from the Oracle Website.
+   Dowload the installation files from the Oracle Website. Im' using the 64 bit linux version 12.1.0.2.
 
 
 ** Docker
@@ -120,10 +120,13 @@
 
     This docker image will contain a software only install. It will not have a ready database.
 
-    We will copy the needed files to the Docker image and then remove them again
-    Note that this image will be a big image so there needs to be enough space on the drive
+    We will copy the needed files from storage to the Docker image build directory and then remove them again. 
+    Note that this image will be a big image so there needs to be enough space on the drive.
 
     Download of the software needs to happen manually.
+
+    The response file oracleTools/software/database12.1.0.2.0/software/db.rsp contains info like the install directory what users and groups to use.
+    You can also configure the starter db here as wel as grid options. None of the are used currently
 
     #+BEGIN_SRC sh :dir /sudo::/home/vercapi/Documents/projects/oracleTools/software/database12.1.0.2.0/software :results raw
       cp /mnt/localData/stage/linuxamd64_12102_database_1of2.zip ./
@@ -134,14 +137,26 @@
       rm linuxamd64_12102_database_1of2.zip && rm linuxamd64_12102_database_2of2.zip
     #+END_SRC
 
-    Running the docker with a shell to see the installation was successful
+    Running the docker with a shell to see the installation was successful. Starting the DB will not work but you can check the installed files.
     #+BEGIN_SRC sh :dir /sudo::/home/vercapi/Documents/projects/oracleTools/software/database12.1.0.2.0/software :results raw
       docker run -i -t vercapi/oracle_software121 /bin/bash
     #+END_SRC
 
 *** Build the docker with DB creation
 
-    This step actualy creates a database inside the docker. The parmeters to the scripts can be changed to install another DB.
+    The build directory is oracleTools/database12.1.0.2.0/dbca
+
+    This run_db.sh.orig script is a template script that is in charge for starting up the database. The parameters will be correctly set by the create_db script and the file will be place in the docker.
+    This is the script that will be run when the docker starts. 
+    - It will configure the listener listening on the hostname given on startup, so any hostname can be used to start multiple instances
+    - It will then start the listener and the database
+    - It will start the saltstack minion
+
+    db_install.dbt.orig is a template file for installing a database with dbca. It will be converted to sb_install.dbt by the create_db.sh and placed on the docker image.
+
+    listener.ora file is also a template that gets converted by create_db.sh so that it can be used by dbca after it has been placed on the docker.
+
+    The create_db.sh script actualy creates a database inside the docker. The parmeters to the scripts can be changed to install another DB.
     The first step sets up the dbca template for the correct parameters. More parameters can be added with additional sed commands to have
     more flexibility.
    
@@ -168,13 +183,13 @@
 
 *** Run the database
 
-    We will prepare the directories so the standard orcl docker container can see the docker
+    We will prepare the directories so the standard orcl docker container can see the docker. This is only needed when using the salt-minion
 
     #+CALL: prep_minion(minion="orcl.oracletools") :exports results
 
     #+RESULTS:
 
-    Note that starting the database this way will reset all data on the moment the contaier is destroyed
+    Note that starting the database this way will remove all data on the moment the contaier is destroyed
 
     This is for simply starting the DB without using saltstack
     #+HEADER: :var minion="orcl.oracletools"
@@ -191,8 +206,6 @@
     #+RESULTS:
     : 284346f409a2c76b84624a9913719a3e90c73e44af9e5907c7f2af0052c9ab5b
 
-
-
     Hook into the running container
     #+HEADER: :var minion="orcl.oracletools"
     #+BEGIN_SRC sh :dir /sudo:root@nitro:/home/vercapi/Documents/projects/oracleTools
@@ -201,7 +214,8 @@
 
     Run docker without the saltstack stuff
     #+BEGIN_SRC sh :dir /sudo:root@nitro:/home/vercapi/Documents/projects/oracleTools
-    
+     
     #+END_SRC
 
 
+ 

@@ -1,3 +1,4 @@
+
 ORACLE_HOME={{oracle_home}}
 ORACLE_BASE={{oracle_base}}
 ORACLE_SID={{oracle_sid}}
@@ -9,9 +10,9 @@ setup_listener() {
 }
 
 start_database() {
-	$ORACLE_HOME/bin/sqlplus / as sysdba << EOF
-	startup
-	exit
+  $ORACLE_HOME/bin/sqlplus / as sysdba << EOF
+  startup
+  exit
 EOF
 }
 

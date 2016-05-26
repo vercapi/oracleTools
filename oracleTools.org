@@ -152,6 +152,40 @@
     - It will then start the listener and the database
     - It will start the saltstack minion
 
+    #+BEGIN_SRC sh :tangle ./database12.1.0.2.0/dbca/run_db.sh.orig
+      ORACLE_HOME={{oracle_home}}
+      ORACLE_BASE={{oracle_base}}
+      ORACLE_SID={{oracle_sid}}
+
+      export ORACLE_HOME ORACLE_SID
+
+      setup_listener() {
+          sed -i "s/{{hostname}}/$(hostname)/" $ORACLE_HOME/network/admin/listener.ora
+      }
+
+      start_database() {
+        $ORACLE_HOME/bin/sqlplus / as sysdba << EOF
+        startup
+        exit
+      EOF
+      }
+
+      start_listener() {
+          $ORACLE_HOME/bin/lsnrctl start
+      }
+
+
+      setup_listener
+      start_listener
+      start_database
+
+      # Start the minion last so that it status reflects the processes above
+      sudo salt-minion
+
+      # Tail the output of the DB in case of issues
+      #tail -f $ORACLE_BASE/diag/rdbms/$ORACLE_SID/*/trace/alert_$ORACLE_SID.log
+    #+END_SRC
+
     db_install.dbt.orig is a template file for installing a database with dbca. It will be converted to sb_install.dbt by the create_db.sh and placed on the docker image.
 
     listener.ora file is also a template that gets converted by create_db.sh so that it can be used by dbca after it has been placed on the docker.

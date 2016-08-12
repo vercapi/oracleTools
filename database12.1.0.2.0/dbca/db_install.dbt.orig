@@ -5,8 +5,8 @@
       <option name="SPATIAL" value="false"/>
       <option name="IMEDIA" value="false"/>
       <option name="XDB_PROTOCOLS" value="false"/>
-      <option name="ORACLE_TEXT" value="false"/>
-      <option name="SAMPLE_SCHEMA" value="false"/>
+      <option name="ORACLE_TEXT" value="true"/>
+      <option name="SAMPLE_SCHEMA" value="false/>
       <option name="CWMLITE" value="false"/>
       <option name="EM_REPOSITORY" value="false"/>
       <option name="APEX" value="false"/>
@@ -54,7 +54,7 @@
          <initParam name="filesystemio_options" value="setall"/>
       </InitParams>
       <MiscParams>
-         <characterSet>WE8MSWIN1252</characterSet>
+         <characterSet>AL32UTF8</characterSet>
          <nationalCharacterSet>AL16UTF16</nationalCharacterSet>
          <archiveLogMode>false</archiveLogMode>
          <initParamFileName>{ORACLE_BASE}/admin/{DB_UNIQUE_NAME}/pfile/init.ora</initParamFileName>

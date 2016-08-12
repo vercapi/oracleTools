@@ -35,7 +35,7 @@ RUN chown -R oracle:oinstall /opt/oracle
 
 # Prepare the software installation directory
 USER oracle
-RUN unzip linuxamd64_12102_database_1of2.zip && unzip linuxamd64_12102_database_2of2.zip
+RUN unzip linuxamd64_12102_database_1of2.zip && unzip -o linuxamd64_12102_database_2of2.zip
 RUN rm linuxamd64_12102_database_1of2.zip && rm linuxamd64_12102_database_2of2.zip
 
 # Copy the response file
@@ -52,3 +52,4 @@ RUN ./runInstaller -ignoreSysPrereqs -ignorePrereq -waitforcompletion -silent -r
 USER root
 RUN /opt/oracle/oraInventory/orainstRoot.sh
 RUN /opt/oracle/app/product/12.1.0/dbhome/root.sh
+

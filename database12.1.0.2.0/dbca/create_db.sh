@@ -15,8 +15,10 @@ p_oracle_base=$(cat <<'BABEL_TABLE'
 /opt/oracle/app
 BABEL_TABLE
 )
-#rm db_install.dbt && cp db_install.dbt.orig db_install.dbt
-rm run_db.sh && cp run_db.sh.orig run_db.sh
+rm db_install.dbt
+cp db_install.dbt.orig db_install.dbt
+rm run_db.sh 
+cp run_db.sh.orig run_db.sh
 
 sed -i "s/{{ db_create_file_dest }}/\/opt\/oracle\/oraInventory\/$p_oracle_sid/" ./db_install.dbt
 sed -i "s/{{ oracle_base }}/\/opt\/oracle\/app/" ./db_install.dbt

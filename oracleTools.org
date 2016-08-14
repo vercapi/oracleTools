@@ -118,10 +118,12 @@
 
 *** Build the docker for software only
 
-    This docker image will contain a software only install. It will not have a ready database.
+    Docker file: oracleTools/software/database12.1.0.2.0/software/Dockerfile
+    
+    This docker will be a software only install there is no ready to use database. 
 
-    We will copy the needed files from storage to the Docker image build directory and then remove them again. 
-    Note that this image will be a big image so there needs to be enough space on the drive.
+    To get a running database this image can be used to create a datacontainer that has a DB on it. The same image can be used to run the
+    resulting container.
 
     Download of the software needs to happen manually.
 
@@ -142,17 +144,32 @@
       docker run -i -t vercapi/oracle_software121 /bin/bash
     #+END_SRC
 
-*** Build the docker with DB creation
+***** Database creation script
 
-    The build directory is oracleTools/database12.1.0.2.0/dbca
+      This is the script on the docker that will actually create the database when the iamge is used to create a Database volume
 
-    This run_db.sh.orig script is a template script that is in charge for starting up the database. The parameters will be correctly set by the create_db script and the file will be place in the docker.
-    This is the script that will be run when the docker starts. 
-    - It will configure the listener listening on the hostname given on startup, so any hostname can be used to start multiple instances
-    - It will then start the listener and the database
-    - It will start the saltstack minion
+     #+HEADERS: :var p_oracle_sid="orcl" p_oracle_home="/opt/oracle/app/product/12.1.0/dbhome" p_persistent_data="/opt/oracle/oraInventory" p_oracle_base="/opt/oracle/app"
+    #+BEGIN_SRC sh :tangle ./database12.1.0.2.0/software/create_db.sh :dir ./database12.1.0.2.0/dbca
+      rm db_install.dbt
+      cp db_install.dbt.orig db_install.dbt
+      rm run_db.sh 
+      cp run_db.sh.orig run_db.sh
 
-    #+BEGIN_SRC sh :tangle ./database12.1.0.2.0/dbca/run_db.sh.orig
+      sed -i "s/{{ db_create_file_dest }}/\/opt\/oracle\/oraInventory\/$p_oracle_sid/" ./db_install.dbt
+      sed -i "s/{{ oracle_base }}/\/opt\/oracle\/app/" ./db_install.dbt
+      sed -i "s/{{ database_name }}/$p_oracle_sid/" ./db_install.dbt
+
+      sed -i "s/{{oracle_home}}/$(echo $p_oracle_home | sed 's,/,\\/,g')/" ./run_db.sh
+      sed -i "s/{{oracle_sid}}/$p_oracle_sid/" ./run_db.sh
+      sed -i "s/{{oracle_base}}/$(echo $p_oracle_base | sed 's,/,\\/,g')/" ./run_db.sh
+
+      docker build --build-arg ORACLE_HOME=$p_oracle_home --build-arg ORACLE_SID=$p_oracle_sid --build-arg ORACLE_BASE=$p_oracle_base -t vercapi/orcl_121 .
+    #+END_SRC
+
+**** Database volume creation
+**** Run database
+   
+   #+BEGIN_SRC sh :tangle ./database12.1.0.2.0/dbca/run_db.sh.orig
       ORACLE_HOME={{oracle_home}}
       ORACLE_BASE={{oracle_base}}
       ORACLE_SID={{oracle_sid}}
@@ -186,46 +203,7 @@
       #tail -f $ORACLE_BASE/diag/rdbms/$ORACLE_SID/*/trace/alert_$ORACLE_SID.log
     #+END_SRC
 
-    db_install.dbt.orig is a template file for installing a database with dbca. It will be converted to sb_install.dbt by the create_db.sh and placed on the docker image.
 
-    listener.ora file is also a template that gets converted by create_db.sh so that it can be used by dbca after it has been placed on the docker.
-
-    The create_db.sh script actualy creates a database inside the docker. The parmeters to the scripts can be changed to install another DB.
-    The first step sets up the dbca template for the correct parameters. More parameters can be added with additional sed commands to have
-    more flexibility.
-   
-    #+HEADERS: :var p_oracle_sid="orcl" p_oracle_home="/opt/oracle/app/product/12.1.0/dbhome" p_persistent_data="/opt/oracle/oraInventory" p_oracle_base="/opt/oracle/app"
-    #+BEGIN_SRC sh :tangle ./database12.1.0.2.0/dbca/create_db.sh :dir ./database12.1.0.2.0/dbca
-      #rm db_install.dbt && cp db_install.dbt.orig db_install.dbt
-      rm run_db.sh && cp run_db.sh.orig run_db.sh
-
-      sed -i "s/{{ db_create_file_dest }}/\/opt\/oracle\/oraInventory\/$p_oracle_sid/" ./db_install.dbt
-      sed -i "s/{{ oracle_base }}/\/opt\/oracle\/app/" ./db_install.dbt
-      sed -i "s/{{ database_name }}/$p_oracle_sid/" ./db_install.dbt
-
-      sed -i "s/{{oracle_home}}/$(echo $p_oracle_home | sed 's,/,\\/,g')/" ./run_db.sh
-      sed -i "s/{{oracle_sid}}/$p_oracle_sid/" ./run_db.sh
-      sed -i "s/{{oracle_base}}/$(echo $p_oracle_base | sed 's,/,\\/,g')/" ./run_db.sh
-
-      docker build --build-arg ORACLE_HOME=$p_oracle_home --build-arg ORACLE_SID=$p_oracle_sid --build-arg ORACLE_BASE=$p_oracle_base -t vercapi/orcl_121 .
-    #+END_SRC
-
-    Running the docker with a shell to see the installation was successful
-    #+BEGIN_SRC sh :dir /sudo::/home/vercapi/Documents/projects/oracleTools/software/database12.1.0.2.0/software :results raw
-      docker run -i -t vercapi/orcl_121 /bin/bash
-    #+END_SRC
-
-*** Run the database
-
-    We will prepare the directories so the standard orcl docker container can see the docker. This is only needed when using the salt-minion
-
-    #+CALL: prep_minion(minion="orcl.oracletools") :exports results
-
-    #+RESULTS:
-
-    Note that starting the database this way will remove all data on the moment the contaier is destroyed
-
-    This is for simply starting the DB without using saltstack
     #+HEADER: :var minion="orcl.oracletools"
     #+BEGIN_SRC sh :dir /sudo:root@nitro:/home/vercapi/Documents/projects/oracleTools
       docker run -id -h $minion \
@@ -237,9 +215,6 @@
              vercapi/orcl_121
     #+END_SRC
 
-    #+RESULTS:
-    : 284346f409a2c76b84624a9913719a3e90c73e44af9e5907c7f2af0052c9ab5b
-
     Hook into the running container
     #+HEADER: :var minion="orcl.oracletools"
     #+BEGIN_SRC sh :dir /sudo:root@nitro:/home/vercapi/Documents/projects/oracleTools
@@ -249,7 +224,17 @@
     Run docker without the saltstack stuff
     #+BEGIN_SRC sh :dir /sudo:root@nitro:/home/vercapi/Documents/projects/oracleTools
     docker run -id -h orcl.oracletools -p 1521:1521 --name orcl vercapi/orcl_121
-    #+END_SRC
+    #+END_SRC 
 
 
- 
+** New method
+
+   BUILD
+   - Build software only install (use existing)
+   - dbca install (script) -> Is actualy creating a database
+     - Create empty volume (name based with the correct item)
+     - Run software only with dbca on startup
+       - mount empty volume when running
+   
+   RUN
+   - Run the software only install with the desired volume

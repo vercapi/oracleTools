@@ -15,34 +15,6 @@
     docker build -t vercapi/oracle_minion .
     #+END_SRC
 
-    #+RESULTS:
-    Sending build context to Docker daemon 4.096 kB
-    Step 1 : FROM oraclelinux:7.2
-     ---> adf2d3d00fce
-    Step 2 : RUN rpm --import https://repo.saltstack.com/yum/redhat/7/x86_64/latest/SALTSTACK-GPG-KEY.pub
-     ---> Using cache
-     ---> 38ccb5f3786f
-    Step 3 : ADD ./saltstack.repo /etc/yum.repos.d/saltstack.repo
-     ---> Using cache
-     ---> a2b6da9fb63a
-    Step 4 : RUN yum -y update && yum -y install salt-minion
-     ---> Using cache
-     ---> a1b51a63f4b8
-    Step 5 : VOLUME ['/etc/salt/minion.d', '/etc/salt/pki/']
-     ---> Running in 5b93ff2737aa
-     ---> e257e76217b3
-    Removing intermediate container 5b93ff2737aa
-    Step 6 : COPY minion /etc/salt/minion
-     ---> bac30c04f76b
-    Removing intermediate container 508a08c9fc5a
-    Step 7 : CMD /usr/bin/salt-minion
-     ---> Running in ac54b269c8be
-     ---> 7f183f108117
-    Removing intermediate container ac54b269c8be
-    Successfully built 7f183f108117
-
-    
-
 *** Supplying the keys for an vercapi/oracle_minion container
 
     Generate a key move it to the master and supply it so that the docker image can be build with it.
@@ -116,6 +88,8 @@
    install on the image. The second will actually create a database. This gives the advantage that we can create different dockers
    with different databases based on the same base docker image with the software install.
 
+   If you get an error on disk space add "--storage-opt dm.basesize=20G" to the startup. This will increase the max size of the container.
+
 *** Build the docker for software only
 
     Docker file: oracleTools/software/database12.1.0.2.0/software/Dockerfile
@@ -144,32 +118,33 @@
       docker run -i -t vercapi/oracle_software121 /bin/bash
     #+END_SRC
 
-***** Database creation script
+*** TODO Database volume creation
 
-      This is the script on the docker that will actually create the database when the iamge is used to create a Database volume
+    Creates a data volume container with a new database on it
+    #+BEGIN_SRC sh :tangle database12.1.0.2.0/software/create_db_volume.sh
+      docker create -d --name oradata-container -v /opt/oracle/oraInventory vercapi/oracle_software121 /home/oracle/scripts/create_db.sh
+    #+END_SRC
 
-     #+HEADERS: :var p_oracle_sid="orcl" p_oracle_home="/opt/oracle/app/product/12.1.0/dbhome" p_persistent_data="/opt/oracle/oraInventory" p_oracle_base="/opt/oracle/app"
+**** Scripts provided for docker
+
+      This is the script on the docker that will actually create the database when the image is used to create a Database volume
+
+     #+HEADERS: :var p_oracle_sid="orcl" :var p_template_file="db_install.dbt"
     #+BEGIN_SRC sh :tangle ./database12.1.0.2.0/software/create_db.sh :dir ./database12.1.0.2.0/dbca
-      rm db_install.dbt
-      cp db_install.dbt.orig db_install.dbt
-      rm run_db.sh 
-      cp run_db.sh.orig run_db.sh
+      ORACLE_HOME="/opt/oracle/app/product/12.1.0/dbhome"
+      PERSISTENT_DATA="/opt/oracle/oraInventory"
+      ORACLE_BASE="/opt/oracle/app"
 
       sed -i "s/{{ db_create_file_dest }}/\/opt\/oracle\/oraInventory\/$p_oracle_sid/" ./db_install.dbt
       sed -i "s/{{ oracle_base }}/\/opt\/oracle\/app/" ./db_install.dbt
       sed -i "s/{{ database_name }}/$p_oracle_sid/" ./db_install.dbt
 
-      sed -i "s/{{oracle_home}}/$(echo $p_oracle_home | sed 's,/,\\/,g')/" ./run_db.sh
-      sed -i "s/{{oracle_sid}}/$p_oracle_sid/" ./run_db.sh
-      sed -i "s/{{oracle_base}}/$(echo $p_oracle_base | sed 's,/,\\/,g')/" ./run_db.sh
-
-      docker build --build-arg ORACLE_HOME=$p_oracle_home --build-arg ORACLE_SID=$p_oracle_sid --build-arg ORACLE_BASE=$p_oracle_base -t vercapi/orcl_121 .
+      $ORACLE_HOME/bin/dbca -silent -createdatabase -templatename /home/oracle/$p_template_file -gdbname $p_oracle_sid -sid $p_oracle_sid -syspassword oracle -systempassword oracle -dbsnmppassword oracle
     #+END_SRC
 
-**** Database volume creation
-**** Run database
+*** Run database
    
-   #+BEGIN_SRC sh :tangle ./database12.1.0.2.0/dbca/run_db.sh.orig
+   #+BEGIN_SRC sh :tangle ./database12.1.0.2.0/dbca/run_db.sh
       ORACLE_HOME={{oracle_home}}
       ORACLE_BASE={{oracle_base}}
       ORACLE_SID={{oracle_sid}}

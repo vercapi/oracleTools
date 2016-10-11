@@ -74,6 +74,22 @@
     4d65a45728964c7b4d9c2776e89b9a3a2c97029f7c6ebc71c7b1b0e66f80964a
     
 
+** TODO Copy between
+
+   To copy between systems.
+   This should become the local repo.
+
+   On source
+
+   #+BEGIN_SRC sh
+   docker save -o <save image to path> <image name>
+   #+END_SRC
+
+   #+BEGIN_SRC sh
+   docker load -i <path to image tar file>
+   #+END_SRC
+
+
 * Database
 
 ** Preparation steps
@@ -118,7 +134,9 @@
       docker run -i -t vercapi/oracle_software121 /bin/bash
     #+END_SRC
 
-*** TODO Database volume creation
+    In the container you can check the log files produced in the install command or subsequent scripts.
+
+*** Database volume creation
 
     Creates a data volume container with a new database on it
     #+BEGIN_SRC sh :tangle database12.1.0.2.0/software/create_db_volume.sh
@@ -127,9 +145,9 @@
 
 **** Scripts provided for docker
 
-      This is the script on the docker that will actually create the database when the image is used to create a Database volume
+    This is the script on the docker that will actually create the database when the image is used to create a Database volume
 
-     #+HEADERS: :var p_oracle_sid="orcl" :var p_template_file="db_install.dbt"
+    #+HEADERS: :var p_oracle_sid="orcl" :var p_template_file="db_install.dbt"
     #+BEGIN_SRC sh :tangle ./database12.1.0.2.0/software/create_db.sh :dir ./database12.1.0.2.0/dbca
       ORACLE_HOME="/opt/oracle/app/product/12.1.0/dbhome"
       PERSISTENT_DATA="/opt/oracle/oraInventory"

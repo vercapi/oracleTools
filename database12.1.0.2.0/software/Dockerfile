@@ -33,12 +33,6 @@ RUN echo 'oracle ALL=(ALL) NOPASSWD:ALL' >> /etc/sudoers && \
 
 # Install response file
 COPY db.rsp /home/oracle/config/
-# Config for listener
-COPY listener.ora /home/oracle/config
-# dbca script
-COPY create_db.sh /home/oracle/scripts
-# Startup script
-COPY run_db.sh /home/oracle/scripts
 
 # Fix rights for the oracle user
 RUN chown -R oracle:oinstall /home/oracle/ && \
@@ -48,7 +42,8 @@ RUN chown -R oracle:oinstall /home/oracle/ && \
 # Start the software only install
 WORKDIR /home/oracle/stage
 USER oracle
-RUN unzip linuxamd64_12102_database_1of2.zip && unzip linuxamd64_12102_database_2of2.zip
+RUN unzip linuxamd64_12102_database_1of2.zip
+RUN unzip linuxamd64_12102_database_2of2.zip
 RUN rm linuxamd64_12102_database_1of2.zip && rm linuxamd64_12102_database_2of2.zip
 WORKDIR /home/oracle/stage/database
 RUN ./runInstaller -ignoreSysPrereqs -ignorePrereq -waitforcompletion -silent -force -responseFile /home/oracle/config/db.rsp
@@ -57,6 +52,18 @@ RUN /opt/oracle/oraInventory/orainstRoot.sh
 RUN /opt/oracle/app/product/12.1.0/dbhome/root.sh
 
 USER oracle
+
+# Files we use after software only installation
+# Config for listener
+#COPY listener.ora /home/oracle/config
+# dbca script
+#COPY create_db.sh /home/oracle/scripts
+# Startup script
+#COPY run_db.sh /home/oracle/scripts
+
+
 WORKDIR /home/oracle/
+
+
 
 CMD sqlplus

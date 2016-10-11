@@ -136,6 +136,58 @@
 
     In the container you can check the log files produced in the install command or subsequent scripts.
 
+**** Main script
+
+     This script is the startup script for the DB. It will allow creating a DB or running it
+
+     #+BEGIN_SRC sh :tangle database12.1.0.2.0/software/run.sh
+       # Simply run the database
+       function runDB {
+           lsnrctl start
+           sqlplus / as sysdba <<EOF
+           startup;
+       EOF
+
+       }
+
+       function checkDBExists {
+          # No entry in oratab, DB doesn't exist yet
+          if [ "`grep $ORACLE_SID /etc/oratab`" == "" ]; then
+             echo 0;
+          else
+             echo 1;
+          fi;
+       }
+
+       while [[ $# -gt 1 ]]
+       do
+           key="$1"
+
+           case $key in
+               --create)
+                   if [ "`checkDBExists`" == "0" ]; then
+                       ./createDB.sh
+                   else
+                       echo "DB already exists"
+                   fi;
+                   shift
+                   ;;
+               --run)
+                   if [ "`checkDBExists`" == "1" ]; then
+                       runDB "$@"
+                   else
+                       echo "No DB exists already"
+                   fi;
+                   shift
+                   ;;
+               ,*)
+                   help
+                   ;;
+           esac
+       done
+     #+END_SRC
+
+
 *** Database volume creation
 
     Creates a data volume container with a new database on it
@@ -143,7 +195,7 @@
       docker create -d --name oradata-container -v /opt/oracle/oraInventory vercapi/oracle_software121 /home/oracle/scripts/create_db.sh
     #+END_SRC
 
-**** Scripts provided for docker
+**** Database install scripts on docker
 
     This is the script on the docker that will actually create the database when the image is used to create a Database volume
 
@@ -217,7 +269,9 @@
     Run docker without the saltstack stuff
     #+BEGIN_SRC sh :dir /sudo:root@nitro:/home/vercapi/Documents/projects/oracleTools
     docker run -id -h orcl.oracletools -p 1521:1521 --name orcl vercapi/orcl_121
-    #+END_SRC 
+    #+END_SRC
+
+**** Run scripts on docker
 
 
 ** New method

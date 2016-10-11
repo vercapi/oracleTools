@@ -4,6 +4,18 @@
 
 FROM vercapi/oracle_minion
 
+# Oracle environment variables
+ENV ORACLE_BASE=/opt/oracle/app
+    ORACLE_HOME=/opt/oracle/app/product/12.1.0/dbhome
+    ORACLE_SID=ORCL
+    ORACLE_PDB=ORCLPDB1
+
+
+# System environment variables
+ENV PATH=$ORACLE_HOME/bin:$ORACLE_HOME/OPatch/:/usr/sbin:$PATH \
+    LD_LIBRARY_PATH=$ORACLE_HOME/lib:/usr/lib \
+    CLASSPATH=$ORACLE_HOME/jlib:$ORACLE_HOME/rdbms/jlib
+
 # Preparing destionatino directories
 RUN mkdir -p /opt/oracle && \
     mkdir -p /opt/oracle/oraInventory && \

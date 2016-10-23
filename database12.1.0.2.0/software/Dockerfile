@@ -5,9 +5,9 @@
 FROM vercapi/oracle_minion
 
 # Oracle environment variables
-ENV ORACLE_BASE=/opt/oracle/app
-    ORACLE_HOME=/opt/oracle/app/product/12.1.0/dbhome
-    ORACLE_SID=ORCL
+ENV ORACLE_BASE=/opt/oracle/app \
+    ORACLE_HOME=/opt/oracle/app/product/12.1.0/dbhome \
+    ORACLE_SID=ORCL \
     ORACLE_PDB=ORCLPDB1
 
 
@@ -59,6 +59,7 @@ RUN unzip linuxamd64_12102_database_2of2.zip
 RUN rm linuxamd64_12102_database_1of2.zip && rm linuxamd64_12102_database_2of2.zip
 WORKDIR /home/oracle/stage/database
 RUN ./runInstaller -ignoreSysPrereqs -ignorePrereq -waitforcompletion -silent -force -responseFile /home/oracle/config/db.rsp
+RUN rm -rf /home/oracle/stage/database
 USER root
 RUN /opt/oracle/oraInventory/orainstRoot.sh
 RUN /opt/oracle/app/product/12.1.0/dbhome/root.sh
@@ -67,15 +68,20 @@ USER oracle
 
 # Files we use after software only installation
 # Config for listener
-#COPY listener.ora /home/oracle/config
+COPY listener.ora /home/oracle/config
 # dbca script
-#COPY create_db.sh /home/oracle/scripts
+COPY create_db.sh /home/oracle/scripts
 # Startup script
-#COPY run_db.sh /home/oracle/scripts
+COPY run.sh /home/oracle/scripts
+# DBCA response file
+COPY dbca.rsp /home/oracle/scripts
 
+#Change permissions for the  DBCA and run scripts
+USER root
+RUN chown -R oracle:oinstall /home/oracle/scripts/
+RUN chmod u+x /home/oracle/scripts/*.sh
+USER oracle
 
-WORKDIR /home/oracle/
+EXPOSE 1521 5500
 
-
-
-CMD sqlplus
+CMD run.sh

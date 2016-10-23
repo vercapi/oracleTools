@@ -159,6 +159,9 @@
           fi;
        }
 
+       # We always want to start the minion
+       sudo salt-minion
+
        while [[ $# -gt 1 ]]
        do
            key="$1"
@@ -201,54 +204,31 @@
 
     #+HEADERS: :var p_oracle_sid="orcl" :var p_template_file="db_install.dbt"
     #+BEGIN_SRC sh :tangle ./database12.1.0.2.0/software/create_db.sh :dir ./database12.1.0.2.0/dbca
-      ORACLE_HOME="/opt/oracle/app/product/12.1.0/dbhome"
-      PERSISTENT_DATA="/opt/oracle/oraInventory"
-      ORACLE_BASE="/opt/oracle/app"
+      # File locations
+      LSNR_LOC=$ORACLE_HOME/network/admin/listener.ora
+      DBCA_RSP_LOC=/home/oracle/config/dbca.rsp
 
-      sed -i "s/{{ db_create_file_dest }}/\/opt\/oracle\/oraInventory\/$p_oracle_sid/" ./db_install.dbt
-      sed -i "s/{{ oracle_base }}/\/opt\/oracle\/app/" ./db_install.dbt
-      sed -i "s/{{ database_name }}/$p_oracle_sid/" ./db_install.dbt
+      # Actually configure the install file with the parameters
+      sed -i "s/{{ORACLE_SID}}/orcl/" $DBCA_RSP_LOC
+      sed -i "s/{{ORACLE_PWD}}/Welcome1/" $DBCA_RSP_LOC
+      sed -i "s/{{ORACLE_PDB}}/ORAPDB1/" $DBCA_RSP_LOC
 
-      $ORACLE_HOME/bin/dbca -silent -createdatabase -templatename /home/oracle/$p_template_file -gdbname $p_oracle_sid -sid $p_oracle_sid -syspassword oracle -systempassword oracle -dbsnmppassword oracle
+      # Install listener
+      mv /home/oracle/config/listener.ora
+
+      # Configure the listener with the actual hostname (name of the container)
+      sed -i "s/{{hostname}}/$(hostname)/" LSNR_LOC
+
+      # Start listener for dbca
+      lsnrct start
+
+      # Run DBCA, output log on failure
+      dbca -silent -createdatabase -responseFile $DBCA_RSP_LOC ||
+        cat /opt/oracle/cfgtoollogs/dbca/$ORACLE_SID/$ORACLE_SID.log
     #+END_SRC
 
 *** Run database
    
-   #+BEGIN_SRC sh :tangle ./database12.1.0.2.0/dbca/run_db.sh
-      ORACLE_HOME={{oracle_home}}
-      ORACLE_BASE={{oracle_base}}
-      ORACLE_SID={{oracle_sid}}
-
-      export ORACLE_HOME ORACLE_SID
-
-      setup_listener() {
-          sed -i "s/{{hostname}}/$(hostname)/" $ORACLE_HOME/network/admin/listener.ora
-      }
-
-      start_database() {
-        $ORACLE_HOME/bin/sqlplus / as sysdba << EOF
-        startup
-        exit
-      EOF
-      }
-
-      start_listener() {
-          $ORACLE_HOME/bin/lsnrctl start
-      }
-
-
-      setup_listener
-      start_listener
-      start_database
-
-      # Start the minion last so that it status reflects the processes above
-      sudo salt-minion
-
-      # Tail the output of the DB in case of issues
-      #tail -f $ORACLE_BASE/diag/rdbms/$ORACLE_SID/*/trace/alert_$ORACLE_SID.log
-    #+END_SRC
-
-
     #+HEADER: :var minion="orcl.oracletools"
     #+BEGIN_SRC sh :dir /sudo:root@nitro:/home/vercapi/Documents/projects/oracleTools
       docker run -id -h $minion \

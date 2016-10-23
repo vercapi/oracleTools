@@ -17,14 +17,17 @@ sed -i "s/{{ORACLE_PWD}}/Welcome1/" $DBCA_RSP_LOC
 sed -i "s/{{ORACLE_PDB}}/ORAPDB1/" $DBCA_RSP_LOC
 
 # Install listener
-mv /home/oracle/config/listener.ora
+mv /home/oracle/config/listener.ora $LSNR_LOC
 
 # Configure the listener with the actual hostname (name of the container)
-sed -i "s/{{hostname}}/$(hostname)/" LSNR_LOC
+sed -i "s/{{hostname}}/$(hostname)/" $LSNR_LOC
 
 # Start listener for dbca
-lsnrct start
+echo "- Starting listener- "
+lsnrctl start
 
 # Run DBCA, output log on failure
+echo "- Starting dbca -"
 dbca -silent -createdatabase -responseFile $DBCA_RSP_LOC ||
-  cat /opt/oracle/cfgtoollogs/dbca/$ORACLE_SID/$ORACLE_SID.log
+  cat /opt/oracle/app/cfgtoollogs/dbca/${ORACLE_SID,,}/${$ORACLE_SID}.log
+echo "- End dbca -"

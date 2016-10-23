@@ -159,8 +159,12 @@
           fi;
        }
 
+       function explain {
+           echo "use --run or --create"
+       }
+
        # We always want to start the minion
-       sudo salt-minion
+       #sudo salt-minion &
 
        while [[ $# -gt 1 ]]
        do
@@ -169,7 +173,7 @@
            case $key in
                --create)
                    if [ "`checkDBExists`" == "0" ]; then
-                       ./createDB.sh
+                       /home/oracle/scripts/create_db.sh
                    else
                        echo "DB already exists"
                    fi;
@@ -184,14 +188,20 @@
                    shift
                    ;;
                ,*)
-                   help
+                   explain
                    ;;
            esac
+           shift
        done
      #+END_SRC
 
 
 *** Database volume creation
+
+    Simply start a container with no volume to create a DB
+    #+BEGIN_SRC sh
+    docker run -id -h oracle --name oracle -p 1521:1521 vercapi/oracle_software121 --create
+    #+END_SRC
 
     Creates a data volume container with a new database on it
     #+BEGIN_SRC sh :tangle database12.1.0.2.0/software/create_db_volume.sh
@@ -214,18 +224,22 @@
       sed -i "s/{{ORACLE_PDB}}/ORAPDB1/" $DBCA_RSP_LOC
 
       # Install listener
-      mv /home/oracle/config/listener.ora
+      mv /home/oracle/config/listener.ora $LSNR_LOC
 
       # Configure the listener with the actual hostname (name of the container)
-      sed -i "s/{{hostname}}/$(hostname)/" LSNR_LOC
+      sed -i "s/{{hostname}}/$(hostname)/" $LSNR_LOC
 
       # Start listener for dbca
-      lsnrct start
+      echo "- Starting listener- "
+      lsnrctl start
 
       # Run DBCA, output log on failure
+      echo "- Starting dbca -"
       dbca -silent -createdatabase -responseFile $DBCA_RSP_LOC ||
-        cat /opt/oracle/cfgtoollogs/dbca/$ORACLE_SID/$ORACLE_SID.log
+        cat /opt/oracle/app/cfgtoollogs/dbca/${ORACLE_SID,,}/${$ORACLE_SID}.log
+      echo "- End dbca -"
     #+END_SRC
+
 
 *** Run database
    

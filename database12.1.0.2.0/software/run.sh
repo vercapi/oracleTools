@@ -17,8 +17,12 @@ function checkDBExists {
    fi;
 }
 
+function explain {
+    echo "use --run or --create"
+}
+
 # We always want to start the minion
-sudo salt-minion
+#sudo salt-minion &
 
 while [[ $# -gt 1 ]]
 do
@@ -27,7 +31,7 @@ do
     case $key in
         --create)
             if [ "`checkDBExists`" == "0" ]; then
-                ./createDB.sh
+                /home/oracle/scripts/create_db.sh
             else
                 echo "DB already exists"
             fi;
@@ -42,7 +46,8 @@ do
             shift
             ;;
         *)
-            help
+            explain
             ;;
     esac
+    shift
 done

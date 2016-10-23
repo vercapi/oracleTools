@@ -74,7 +74,7 @@ COPY create_db.sh /home/oracle/scripts
 # Startup script
 COPY run.sh /home/oracle/scripts
 # DBCA response file
-COPY dbca.rsp /home/oracle/scripts
+COPY dbca.rsp /home/oracle/config
 
 #Change permissions for the  DBCA and run scripts
 USER root
@@ -82,6 +82,7 @@ RUN chown -R oracle:oinstall /home/oracle/scripts/
 RUN chmod u+x /home/oracle/scripts/*.sh
 USER oracle
 
+# For DB and enterprise manager
 EXPOSE 1521 5500
 
-CMD run.sh
+CMD /home/oracle/scripts/run.sh

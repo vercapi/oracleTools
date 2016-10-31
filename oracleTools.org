@@ -131,18 +131,19 @@
 
     Running the docker with a shell to see the installation was successful. Starting the DB will not work but you can check the installed files.
     #+BEGIN_SRC sh :dir /sudo::/home/vercapi/Documents/projects/oracleTools/software/database12.1.0.2.0/software :results raw
-      docker run -i -t vercapi/oracle_software121 /bin/bash
+      docker run -i -t --rm=true vercapi/oracle_software121 /bin/bash
     #+END_SRC
 
     In the container you can check the log files produced in the install command or subsequent scripts.
 
-**** Main script
+**** TODO Main script
 
      This script is the startup script for the DB. It will allow creating a DB or running it
 
      #+BEGIN_SRC sh :tangle database12.1.0.2.0/software/run.sh
        # Simply run the database
-       function runDB {
+       function runDB() {
+           echo 'Starting DB'
            lsnrctl start
            sqlplus / as sysdba <<EOF
            startup;

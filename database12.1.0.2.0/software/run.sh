@@ -1,6 +1,7 @@
 
 # Simply run the database
-function runDB {
+function runDB() {
+    echo 'Starting DB'
     lsnrctl start
     sqlplus / as sysdba <<EOF
     startup;
@@ -8,7 +9,7 @@ EOF
 
 }
 
-function checkDBExists {
+function checkDBExists() {
    # No entry in oratab, DB doesn't exist yet
    if [ "`grep $ORACLE_SID /etc/oratab`" == "" ]; then
       echo 0;
@@ -17,14 +18,14 @@ function checkDBExists {
    fi;
 }
 
-function explain {
+function explain() {
     echo "use --run or --create"
 }
 
 # We always want to start the minion
 #sudo salt-minion &
 
-while [[ $# -gt 1 ]]
+while [[ $# -ge 1 ]]
 do
     key="$1"
 

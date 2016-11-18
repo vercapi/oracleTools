@@ -85,4 +85,4 @@ USER oracle
 # For DB and enterprise manager
 EXPOSE 1521 5500
 
-CMD /home/oracle/scripts/run.sh
+ENTRYPOINT ["/bin/bash", "/home/oracle/scripts/run.sh"]

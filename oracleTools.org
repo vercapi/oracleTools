@@ -136,11 +136,12 @@
 
     In the container you can check the log files produced in the install command or subsequent scripts.
 
-**** TODO Main script
+**** Main script
 
      This script is the startup script for the DB. It will allow creating a DB or running it
 
      #+BEGIN_SRC sh :tangle database12.1.0.2.0/software/run.sh
+       #!/bin/bash
        # Simply run the database
        function runDB() {
            echo 'Starting DB'
@@ -200,8 +201,8 @@
 *** Database volume creation
 
     Simply start a container with no volume to create a DB
-    #+BEGIN_SRC sh
-    docker run -id -h oracle --name oracle -p 1521:1521 vercapi/oracle_software121 --create
+    #+BEGIN_SRC sh :tangle database12.1.0.2.0/create_new.sh
+    docker run -i -t -h $1 --name $1 -p 1521:1521 vercapi/oracle_software121 --create
     #+END_SRC
 
     Creates a data volume container with a new database on it

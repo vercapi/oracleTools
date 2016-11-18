@@ -1,4 +1,5 @@
 
+#!/bin/bash
 # Simply run the database
 function runDB() {
     echo 'Starting DB'

@@ -75,6 +75,8 @@ COPY create_db.sh /home/oracle/scripts
 COPY run.sh /home/oracle/scripts
 # DBCA response file
 COPY dbca.rsp /home/oracle/config
+# TNS names files
+COPY tnsnames.ora /home/oracle/config
 
 #Change permissions for the  DBCA and run scripts
 USER root

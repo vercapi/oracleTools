@@ -150,6 +150,10 @@
            startup;
        EOF
 
+           tail -f $ORACLE_BASE/diag/rdbms/*/*/trace/alert*.log &
+           childPID=$!
+           wait $childPID
+
        }
 
        function checkDBExists() {
@@ -168,33 +172,16 @@
        # We always want to start the minion
        #sudo salt-minion &
 
-       while [[ $# -ge 1 ]]
-       do
-           key="$1"
+       echo "Running script"
+       # Create database on first run, otherwise run it
+       if [ "`checkDBExists`" == "0" ]; then
+           echo "building database"
+           /home/oracle/scripts/create_db.sh
+       else
+           echo "DB already exists, starting"
+           runDB "$@"
+       fi;
 
-           case $key in
-               --create)
-                   if [ "`checkDBExists`" == "0" ]; then
-                       /home/oracle/scripts/create_db.sh
-                   else
-                       echo "DB already exists"
-                   fi;
-                   shift
-                   ;;
-               --run)
-                   if [ "`checkDBExists`" == "1" ]; then
-                       runDB "$@"
-                   else
-                       echo "No DB exists already"
-                   fi;
-                   shift
-                   ;;
-               ,*)
-                   explain
-                   ;;
-           esac
-           shift
-       done
      #+END_SRC
 
 
@@ -202,12 +189,17 @@
 
     Simply start a container with no volume to create a DB
     #+BEGIN_SRC sh :tangle database12.1.0.2.0/create_new.sh
-    docker run -i -t -h $1 --name $1 -p 1521:1521 vercapi/oracle_software121 --create
+    docker run -i -t -h $1 --name $1 -p 1521:1521 vercapi/oracle_software121
     #+END_SRC
 
     Creates a data volume container with a new database on it
     #+BEGIN_SRC sh :tangle database12.1.0.2.0/software/create_db_volume.sh
       docker create -d --name oradata-container -v /opt/oracle/oraInventory vercapi/oracle_software121 /home/oracle/scripts/create_db.sh
+    #+END_SRC
+
+    Attach to running container
+    #+BEGIN_SRC sh
+      
     #+END_SRC
 
 **** Database install scripts on docker
@@ -218,6 +210,7 @@
     #+BEGIN_SRC sh :tangle ./database12.1.0.2.0/software/create_db.sh :dir ./database12.1.0.2.0/dbca
       # File locations
       LSNR_LOC=$ORACLE_HOME/network/admin/listener.ora
+      TNSNAMES_LOC=$ORACLE_HOME/network/admin/tnsnames.ora
       DBCA_RSP_LOC=/home/oracle/config/dbca.rsp
 
       # Actually configure the install file with the parameters
@@ -225,11 +218,16 @@
       sed -i "s/{{ORACLE_PWD}}/Welcome1/" $DBCA_RSP_LOC
       sed -i "s/{{ORACLE_PDB}}/ORAPDB1/" $DBCA_RSP_LOC
 
-      # Install listener
+      # Install listener & tnsnames
       mv /home/oracle/config/listener.ora $LSNR_LOC
+      mv /home/oracle/config/tnsnames.ora $TNSNAMES_LOC
 
       # Configure the listener with the actual hostname (name of the container)
       sed -i "s/{{hostname}}/$(hostname)/" $LSNR_LOC
+
+      # Configure the tnsnames with correct SIDs
+      sed -i "s/{{ORACLE_SID}}/orcl/" $LSNR_LOC
+      sed -i "s/{{ORACLE_PDB}}/orclpdb1/" $LSNR_LOC
 
       # Start listener for dbca
       echo "- Starting listener- "
@@ -238,10 +236,28 @@
       # Run DBCA, output log on failure
       echo "- Starting dbca -"
       dbca -silent -createdatabase -responseFile $DBCA_RSP_LOC ||
-        cat /opt/oracle/app/cfgtoollogs/dbca/${ORACLE_SID,,}/${$ORACLE_SID}.log
+          cat /opt/oracle/app/cfgtoollogs/dbca/${ORACLE_SID,,}/${$ORACLE_SID}.log
       echo "- End dbca -"
+
+      echo "- Saving state PDB -"
+      sqlplus / as sysdba << EOF
+         ALTER PLUGGABLE DATABASE $ORACLE_PDB SAVE STATE;
+      EOF
+
+      echo "- Done saving state PDB -"
+
     #+END_SRC
 
+***** TODO Issue with initORCL.ora not created in /opt/oracle/app/product/12.1.0/dbhome/dbs
+      
+      create pfile='/opt/oracle/app/product/12.1.0/dbhome/dbs/initORCL.ora' from spfile='/opt/oracle/app/product/12.1.0/dbhome/dbs/spfileorcl.ora';
+      Command above fixed the issue, but how do we make this general? Should be provided by install or we should use the spfile
+
+***** TODO Password is no Welcome1 as defined in the script
+
+      This only affects the sys as sysdba login when not using 'sqlplus / as sysdba' on the os.
+
+***** TODO Pluggable database doesn't start
 
 *** Run database
    

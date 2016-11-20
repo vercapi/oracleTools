@@ -8,6 +8,10 @@ function runDB() {
     startup;
 EOF
 
+    tail -f $ORACLE_BASE/diag/rdbms/*/*/trace/alert*.log &
+    childPID=$!
+    wait $childPID
+
 }
 
 function checkDBExists() {
@@ -26,30 +30,12 @@ function explain() {
 # We always want to start the minion
 #sudo salt-minion &
 
-while [[ $# -ge 1 ]]
-do
-    key="$1"
-
-    case $key in
-        --create)
-            if [ "`checkDBExists`" == "0" ]; then
-                /home/oracle/scripts/create_db.sh
-            else
-                echo "DB already exists"
-            fi;
-            shift
-            ;;
-        --run)
-            if [ "`checkDBExists`" == "1" ]; then
-                runDB "$@"
-            else
-                echo "No DB exists already"
-            fi;
-            shift
-            ;;
-        *)
-            explain
-            ;;
-    esac
-    shift
-done
+echo "Running script"
+# Create database on first run, otherwise run it
+if [ "`checkDBExists`" == "0" ]; then
+    echo "building database"
+    /home/oracle/scripts/create_db.sh
+else
+    echo "DB already exists, starting"
+    runDB "$@"
+fi;

@@ -199,7 +199,7 @@
 
     Attach to running container
     #+BEGIN_SRC sh
-      
+      sudo docker exec -i -t $1 /bin/bash
     #+END_SRC
 
 **** Database install scripts on docker
@@ -253,11 +253,16 @@
       create pfile='/opt/oracle/app/product/12.1.0/dbhome/dbs/initORCL.ora' from spfile='/opt/oracle/app/product/12.1.0/dbhome/dbs/spfileorcl.ora';
       Command above fixed the issue, but how do we make this general? Should be provided by install or we should use the spfile
 
+      Error message:
+      ORA-01078: failure in processing system parameters
+      LRM-00109: could not open parameter file '/opt/oracle/app/product/12.1.0/dbhome/dbs/initORCL.ora'
+
 ***** TODO Password is no Welcome1 as defined in the script
 
       This only affects the sys as sysdba login when not using 'sqlplus / as sysdba' on the os.
 
 ***** TODO Pluggable database doesn't start
+
 
 *** Run database
    
